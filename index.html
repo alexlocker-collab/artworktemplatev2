@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artwork Template Generator</title>
+  <style>
+    :root {
+      --bg:#f8fafc;
+      --card:#ffffff;
+      --border:#cbd5e1;
+      --text:#0f172a;
+      --muted:#475569;
+      --danger:#dc2626;
+      --tab:#e2e8f0;
+    }
+
+    * { box-sizing:border-box; }
+
+    body {
+      margin:0;
+      font-family:Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .app {
+      max-width:1480px;
+      margin:0 auto;
+      padding:24px;
+      display:grid;
+      grid-template-columns:420px 1fr;
+      gap:24px;
+    }
+
+    .card {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      overflow:hidden;
+    }
+
+    .card-header {
+      padding:20px 20px 0;
+    }
+
+    .header-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+
+    .card-title {
+      margin:0;
+      font-size:22px;
+      font-weight:700;
+    }
+
+    .card-content {
+      padding:20px;
+    }
+
+    .section-space > * + * {
+      margin-top:16px;
+    }
+
+    .grid-2 {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .grid-3 {
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:12px;
+    }
+
+    label {
+      display:block;
+      font-size:14px;
+      font-weight:600;
+      margin-bottom:8px;
+      color:var(--muted);
+    }
+
+    input, select, textarea, button {
+      width:100%;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      font:inherit;
+      background:#fff;
+    }
+
+    textarea {
+      min-height:90px;
+      resize:vertical;
+    }
+
+    .button {
+      background:var(--text);
+      color:#fff;
+      border:none;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .button:disabled {
+      opacity:.65;
+      cursor:not-allowed;
+    }
+
+    .button.secondary,
+    .button.ghost {
+      background:#fff;
+      color:var(--text);
+      border:1px solid var(--border);
+    }
+
+    .button.ghost {
+      width:auto;
+    }
+
+    .separator {
+      height:1px;
+      background:#e2e8f0;
+    }
+
+    .preview-shell {
+      min-height:760px;
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:24px;
+      background:#fff;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      overflow:auto;
+    }
+
+    .detail-list > * + * {
+      margin-top:10px;
+    }
+
+    .detail-row {
+      display:grid;
+      grid-template-columns:210px 1fr;
+      gap:10px;
+      font-size:14px;
+    }
+
+    .detail-row .label {
+      font-weight:700;
+      color:var(--muted);
+    }
+
+    .error {
+      color:var(--danger);
+      font-size:14px;
+      white-space:pre-wrap;
+    }
+
+    .ok {
+      color:#166534;
+      font-size:14px;
+    }
+
+    .right-col > * + * {
+      margin-top:24px;
+    }
+
+    .tabs {
+      display:flex;
+      gap:8px;
+      padding:16px 20px 0;
+    }
+
+    .tab-btn {
+      width:auto;
+      border-radius:999px;
+      padding:8px 14px;
+      background:var(--tab);
+      border:1px solid var(--border);
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    .tab-btn.active {
+      background:var(--text);
+      color:#fff;
+    }
+
+    .mask-card {
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      background:#fff;
+    }
+
+    .mask-card + .mask-card {
+      margin-top:14px;
+    }
+
+    .mask-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .mask-actions {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .mask-title {
+      font-weight:700;
+    }
+
+    .inline-note {
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .hidden {
+      display:none !important;
+    }
+
+    @media (max-width:1100px) {
+      .app {
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <div class="card-header">
+        <div class="header-row">
+          <h1 class="card-title">Artwork Template Generator</h1>
+          <button id="resetBtn" type="button" class="button ghost">Reset</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button id="tabCanvas" class="tab-btn active" type="button">Canvas</button>
+        <button id="tabMasks" class="tab-btn" type="button">Masks</button>
+      </div>
+
+      <div class="card-content">
+        <div id="canvasPane" class="section-space">
+          <div class="grid-2">
+            <div>
+              <label for="w">Visible Width</label>
+              <input id="w" type="number" min="0" step="any" value="1000" />
+            </div>
+            <div>
+              <label for="h">Visible Height</label>
+              <input id="h" type="number" min="0" step="any" value="2000" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label for="unit">Unit</label>
+              <select id="unit">
+                <option value="mm">mm</option>
+                <option value="cm">cm</option>
+                <option value="m">m</option>
+                <option value="ft">ft</option>
+                <option value="in">inches</option>
+              </select>
+            </div>
+            <div>
+              <label for="material">Print Type</label>
+              <select id="material">
+                <option>Foamex / Hard Materials</option>
+                <option>Vinyl</option>
+                <option>Set Wrap</option>
+                <option>Silicon Edge</option>
+                <option>Custom Bleed</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="customBleedWrap" class="hidden">
+            <label for="customBleed">Custom Bleed (mm)</label>
+            <input id="customBleed" type="number" min="0" step="any" value="10" />
+          </div>
+
+          <div>
+            <label for="ppi">Pixels Per Inch</label>
+            <input id="ppi" type="number" min="1" step="1" value="90" />
+          </div>
+
+          <div class="separator"></div>
+
+          <div>
+            <label for="templateName">Template Name</label>
+            <input id="templateName" type="text" value="Artwork Template" />
+          </div>
+
+          <div>
+            <label for="job">Job Reference</label>
+            <input id="job" type="text" />
+          </div>
+
+          <div>
+            <label for="art">Artwork Reference</label>
+            <input id="art" type="text" />
+          </div>
+
+          <div>
+            <label for="date">Artwork Due Date</label>
+            <input id="date" type="date" />
+          </div>
+
+          <div>
+            <label for="matinfo">Material</label>
+            <input id="matinfo" type="text" />
+          </div>
+
+          <div>
+            <label for="note">Submission Note</label>
+            <textarea id="note">All artwork should be submitted as high resolution PDFs.</textarea>
+          </div>
+
+          <div class="separator"></div>
+
+          <div>
+            <div style="font-weight:700;margin-bottom:8px;">Material rule</div>
+            <div id="rule"></div>
+          </div>
+
+          <button id="exportPdfBtn" class="button" type="button">Export PDF</button>
+
+          <div id="ok" class="ok hidden">Export started.</div>
+          <div id="err" class="error hidden"></div>
+        </div>
+
+        <div id="masksPane" class="section-space hidden">
+          <div class="inline-note">Use the bottom left of the visible area as the datum for all mask positions.</div>
+          <button id="addMaskBtn" class="button" type="button">Add Mask</button>
+          <div id="maskLimitNote" class="inline-note">You can add up to 5 masks.</div>
+          <div id="masksList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Live Preview</h2></div>
+        <div class="card-content">
+          <div class="preview-shell">
+            <canvas id="previewCanvas" width="900" height="900"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Calculated Output</h2></div>
+        <div class="card-content">
+          <div id="details" class="detail-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MM_PER_INCH = 25.4;
+    const PREVIEW_MAX = 780;
+    const MAX_PDF_MM = 20000;
+    const PT_PER_MM = 72 / 25.4;
+    const MAX_MASKS = 5;
+    const OPACITY_OPTIONS = [10,20,30,40,50,60,70,80,90,100];
+
+    const MATERIALS = {
+      "Foamex / Hard Materials": { bleedMm: 5, wrapMm: 0, showWrapLine: false, notes: "5mm bleed on all edges" },
+      "Vinyl": { bleedMm: 10, wrapMm: 0, showWrapLine: false, notes: "10mm bleed on all edges" },
+      "Set Wrap": { bleedMm: 50, wrapMm: 100, showWrapLine: true, notes: "100mm wrapped edge plus an additional 50mm bleed on all edges" },
+      "Silicon Edge": { bleedMm: 50, wrapMm: 0, showWrapLine: false, notes: "50mm bleed on all edges" },
+      "Custom Bleed": { bleedMm: 10, wrapMm: 0, showWrapLine: false, notes: "Custom bleed on all edges" }
+    };
+
+    const UNIT_TO_MM = {
+      mm: 1,
+      cm: 10,
+      m: 1000,
+      ft: 304.8,
+      in: 25.4
+    };
+
+    const el = (id) => document.getElementById(id);
+    const canvasInputs = ["w","h","unit","material","customBleed","ppi","templateName","job","art","date","matinfo","note"];
+
+    let masks = [];
+    let activeTab = "canvas";
+
+    function round(v, d = 2) {
+      const f = 10 ** d;
+      return Math.round(v * f) / f;
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function toMm(v, u) {
+      return (Number(v || 0) || 0) * (UNIT_TO_MM[u] || 1);
+    }
+
+    function fromMm(mm, unit) {
+      if (unit === "mm") return mm;
+      if (unit === "cm") return mm / 10;
+      if (unit === "m") return mm / 1000;
+      if (unit === "ft") return mm / 304.8;
+      if (unit === "in") return mm / 25.4;
+      return mm;
+    }
+
+    function mmToPx(mm, ppi) {
+      return Math.round((mm / MM_PER_INCH) * Number(ppi || 0));
+    }
+
+    function fmtDate(v) {
+      if (!v) return "—";
+      const d = new Date(v);
+      return Number.isNaN(d.getTime())
+        ? v
+        : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    }
+
+    function safeName(v, fallback) {
+      const s = String(v || "")
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+      return s || fallback;
+    }
+
+    function filenameBase(s) {
+      return `${safeName(s.job, "Job Reference")} - ${safeName(s.art, "Artwork Reference")} - Artwork Template`;
+    }
+
+    function pdfEscape(str) {
+      return String(str)
+        .replace(/\\/g, "\\\\")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)");
+    }
+
+    function textWidthApprox(text, size) {
+      return String(text).length * size * 0.5;
+    }
+
+    function wrapText(text, maxWidth, fontSize) {
+      const words = String(text || "—").split(/\s+/).filter(Boolean);
+      if (!words.length) return ["—"];
+      const lines = [];
+      let line = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        const test = line + " " + words[i];
+        if (textWidthApprox(test, fontSize) <= maxWidth) {
+          line = test;
+        } else {
+          lines.push(line);
+          line = words[i];
+        }
+      }
+
+      lines.push(line);
+      return lines;
+    }
+
+    function hexToRgb01(hex) {
+      const safe = String(hex || "#000000").replace("#", "");
+      const value = safe.length === 3
+        ? safe.split("").map(c => c + c).join("")
+        : safe.padEnd(6, "0").slice(0, 6);
+      const n = parseInt(value, 16);
+      return {
+        r: ((n >> 16) & 255) / 255,
+        g: ((n >> 8) & 255) / 255,
+        b: (n & 255) / 255
+      };
+    }
+
+    function hexToRgbaCss(hex, opacityPct) {
+      const rgb = hexToRgb01(hex);
+      return `rgba(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)}, ${clamp(Number(opacityPct || 0) / 100, 0, 1)})`;
+    }
+
+    function parseFeetInches(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return 0;
+
+      const clean = raw
+        .toLowerCase()
+        .replace(/feet|foot/g, "ft")
+        .replace(/inches|inch/g, "in")
+        .replace(/″/g, '"')
+        .replace(/′/g, "'");
+
+      const ftMatch = clean.match(/(-?\d+(?:\.\d+)?)\s*(?:ft|')/);
+      const inMatch = clean.match(/(-?\d+(?:\.\d+)?)\s*(?:in|")/);
+
+      if (ftMatch || inMatch) {
+        const feet = ftMatch ? Number(ftMatch[1]) : 0;
+        const inches = inMatch ? Number(inMatch[1]) : 0;
+        return (feet * 12 + inches) * 25.4;
+      }
+
+      const parts = clean.split(/\s+/).filter(Boolean);
+      if (parts.length === 2 && !Number.isNaN(Number(parts[0])) && !Number.isNaN(Number(parts[1]))) {
+        return (Number(parts[0]) * 12 + Number(parts[1])) * 25.4;
+      }
+
+      const numeric = Number(clean);
+      if (!Number.isNaN(numeric)) {
+        return numeric * 304.8;
+      }
+
+      return 0;
+    }
+
+    function formatFeetInches(mm) {
+      const totalInches = mm / 25.4;
+      const feet = Math.floor(totalInches / 12);
+      const inches = totalInches - feet * 12;
+      const roundedInches = Math.round(inches * 1000) / 1000;
+      return `${feet}' ${roundedInches}"`;
+    }
+
+    function formatValueForUnit(mm, unit) {
+      if (unit === "ftin") return formatFeetInches(mm);
+      const value = fromMm(mm, unit);
+      return String(Math.round(value * 1000000) / 1000000);
+    }
+
+    function parseMeasurementToMm(value, unit) {
+      if (unit === "ftin") return parseFeetInches(value);
+      return toMm(value, unit);
+    }
+
+    function convertFieldValueBetweenUnits(rawValue, oldUnit, newUnit) {
+      const mm = parseMeasurementToMm(rawValue, oldUnit);
+      return formatValueForUnit(mm, newUnit);
+    }
+
+    function defaultMask(index) {
+      return {
+        id: `mask_${Date.now()}_${index}`,
+        name: `Mask ${index + 1}`,
+        shape: "Rectangle",
+        sizeUnit: "mm",
+        positionUnit: "mm",
+        width: "500",
+        height: "500",
+        diameter: "500",
+        flip: "bottom-left",
+        x: "0",
+        y: "0",
+        fillColor: "#ff0000",
+        fillOpacity: 30,
+        textColor: "#000000",
+        textOpacity: 100,
+        textAlignY: "middle"
+      };
+    }
+
+    function cloneMask(mask, newIndex) {
+      return {
+        ...mask,
+        id: `mask_${Date.now()}_${newIndex}`
+      };
+    }
+
+    function getState() {
+      const material = el("material").value;
+      const base = MATERIALS[material];
+      const customBleed = Math.max(0, Number(el("customBleed").value) || 0);
+
+      const cfg = {
+        bleedMm: material === "Custom Bleed" ? customBleed : base.bleedMm,
+        wrapMm: base.wrapMm,
+        showWrapLine: base.showWrapLine,
+        notes: material === "Custom Bleed" ? `${customBleed}mm custom bleed on all edges` : base.notes
+      };
+
+      const unit = el("unit").value;
+      const visibleWmm = toMm(el("w").value, unit);
+      const visibleHmm = toMm(el("h").value, unit);
+      const ppi = Math.max(1, Number(el("ppi").value) || 1);
+
+      const sizeWithWrapWmm = visibleWmm + cfg.wrapMm * 2;
+      const sizeWithWrapHmm = visibleHmm + cfg.wrapMm * 2;
+      const totalWmm = sizeWithWrapWmm + cfg.bleedMm * 2;
+      const totalHmm = sizeWithWrapHmm + cfg.bleedMm * 2;
+
+      return {
+        material,
+        unit,
+        cfg,
+        visibleWmm,
+        visibleHmm,
+        ppi,
+        sizeWithWrapWmm,
+        sizeWithWrapHmm,
+        totalWmm,
+        totalHmm,
+        visibleWpx: mmToPx(visibleWmm, ppi),
+        visibleHpx: mmToPx(visibleHmm, ppi),
+        wrapWpx: mmToPx(sizeWithWrapWmm, ppi),
+        wrapHpx: mmToPx(sizeWithWrapHmm, ppi),
+        totalWpx: mmToPx(totalWmm, ppi),
+        totalHpx: mmToPx(totalHmm, ppi),
+        job: el("job").value.trim(),
+        art: el("art").value.trim(),
+        date: el("date").value,
+        templateName: el("templateName").value.trim() || "Artwork Template",
+        matinfo: el("matinfo").value.trim(),
+        note: el("note").value.trim() || "—",
+        masks: masks.map(mask => ({ ...mask }))
+      };
+    }
+
+    function buildArtworkInfoLines(s) {
+      return [
+        `Visible: ${round(s.visibleWmm,1)} × ${round(s.visibleHmm,1)} mm`,
+        `Pixels: ${s.visibleWpx.toLocaleString()} × ${s.visibleHpx.toLocaleString()} px`,
+        ...(s.material === "Set Wrap" ? [
+          `Incl. Wrap: ${round(s.sizeWithWrapWmm,1)} × ${round(s.sizeWithWrapHmm,1)} mm`,
+          `Wrap Pixels: ${s.wrapWpx.toLocaleString()} × ${s.wrapHpx.toLocaleString()} px`
+        ] : []),
+        `Incl. Bleed: ${round(s.totalWmm,1)} × ${round(s.totalHmm,1)} mm`,
+        `Bleed Pixels: ${s.totalWpx.toLocaleString()} × ${s.totalHpx.toLocaleString()} px`,
+        `Job Ref: ${s.job || "—"}`,
+        `Artwork Ref: ${s.art || "—"}`,
+        `Deadline: ${fmtDate(s.date)}`,
+        `Material: ${s.matinfo || "—"}`
+      ];
+    }
+
+    function fitPreview(w, h) {
+      const big = Math.max(w, h, 1);
+      const scale = PREVIEW_MAX / big;
+      return {
+        width: Math.max(60, w * scale),
+        height: Math.max(60, h * scale),
+        scale
+      };
+    }
+
+    function getLayout(s, preview) {
+      const p = preview || fitPreview(s.totalWmm, s.totalHmm);
+      const info = buildArtworkInfoLines(s);
+
+      const aspect = p.width / Math.max(p.height, 1);
+      const ultraWide = aspect >= 3;
+      const veryWide = aspect >= 2;
+
+      let panelW = p.width * (ultraWide ? 0.78 : veryWide ? 0.72 : 0.56);
+      panelW = clamp(panelW, p.width * 0.52, p.width * 0.88);
+
+      const infoWrapWidth = panelW * 0.9;
+
+      let titleFont = ultraWide ? Math.max(8, p.height * 0.0115) : veryWide ? Math.max(9, p.height * 0.013) : Math.max(10, p.height * 0.017);
+      let infoFont = ultraWide ? Math.max(5.8, p.height * 0.0076) : veryWide ? Math.max(6.3, p.height * 0.0083) : Math.max(7, p.height * 0.010);
+      let noteFont = ultraWide ? Math.max(5.8, p.height * 0.0072) : veryWide ? Math.max(6.3, p.height * 0.0078) : Math.max(7, p.height * 0.0095);
+      let guideFont = ultraWide ? Math.max(5.8, p.height * 0.0072) : veryWide ? Math.max(6.3, p.height * 0.0078) : Math.max(7, p.height * 0.0095);
+
+      let lineGap = Math.max(7.5, infoFont * (ultraWide ? 1.2 : 1.35));
+      let titleToTextGap = Math.max(8, titleFont * 1.15);
+      let panelPaddingTop = Math.max(8, p.height * (ultraWide ? 0.008 : 0.011));
+      let panelPaddingBottom = Math.max(8, p.height * (ultraWide ? 0.008 : 0.011));
+
+      const noteGap = Math.max(8, p.height * (ultraWide ? 0.01 : 0.014));
+      const guideGap = Math.max(8, guideFont * 1.05);
+      const guideLineCount = s.cfg.showWrapLine ? 2 : 1;
+
+      let infoWrapped = info.map(line => wrapText(line, infoWrapWidth, infoFont));
+      let infoLinesCount = infoWrapped.reduce((sum, lines) => sum + lines.length, 0);
+      let textBlockHeight = infoLinesCount * lineGap;
+      let panelH = Math.max(70, panelPaddingTop + titleToTextGap + textBlockHeight + panelPaddingBottom);
+
+      let noteLines = wrapText(s.note, p.width * 0.76, noteFont);
+      let noteHeight = noteLines.length * (noteFont * 1.12);
+      let guideBlockHeight = guideLineCount * Math.max(8, guideFont * 1.1);
+      let totalHeight = panelH + noteGap + noteHeight + guideGap + guideBlockHeight + 8;
+
+      if (totalHeight > p.height * 0.84) {
+        const shrink = (p.height * 0.84) / totalHeight;
+
+        titleFont = Math.max(7.5, titleFont * shrink);
+        infoFont = Math.max(5.2, infoFont * shrink);
+        noteFont = Math.max(5.2, noteFont * shrink);
+        guideFont = Math.max(5.2, guideFont * shrink);
+
+        lineGap = Math.max(6.5, infoFont * 1.15);
+        titleToTextGap = Math.max(7, titleFont * 1.05);
+        panelPaddingTop = Math.max(6, panelPaddingTop * shrink);
+        panelPaddingBottom = Math.max(6, panelPaddingBottom * shrink);
+
+        infoWrapped = info.map(line => wrapText(line, infoWrapWidth, infoFont));
+        infoLinesCount = infoWrapped.reduce((sum, lines) => sum + lines.length, 0);
+        textBlockHeight = infoLinesCount * lineGap;
+        panelH = Math.max(64, panelPaddingTop + titleToTextGap + textBlockHeight + panelPaddingBottom);
+
+        noteLines = wrapText(s.note, p.width * 0.76, noteFont);
+        noteHeight = noteLines.length * (noteFont * 1.08);
+        guideBlockHeight = guideLineCount * Math.max(7, guideFont * 1.05);
+        totalHeight = panelH + noteGap + noteHeight + guideGap + guideBlockHeight + 8;
+      }
+
+      const blockTop = Math.max(6, (p.height - totalHeight) / 2);
+      const panelX = (p.width - panelW) / 2;
+      const panelY = blockTop;
+      const titleBaseY = panelY + panelPaddingTop + 1.5;
+      const firstLineY = titleBaseY + titleToTextGap;
+      const noteY = panelY + panelH + noteGap;
+      const guideStartY = noteY + noteHeight + guideGap;
+
+      const visibleLeftMm = s.cfg.bleedMm + s.cfg.wrapMm;
+      const visibleBottomMm = s.cfg.bleedMm + s.cfg.wrapMm;
+
+      return {
+        preview: p,
+        info,
+        infoWrapped,
+        lineGap,
+        panelW,
+        panelH,
+        panelX,
+        panelY,
+        titleBaseY,
+        firstLineY,
+        titleFont,
+        infoFont,
+        noteFont,
+        guideFont,
+        noteY,
+        guideStartY,
+        visibleLeftMm,
+        visibleBottomMm
+      };
+    }
+
+    function drawWrappedCentered(ctx, text, x, y, maxWidth, lineHeight, fontSize) {
+      const lines = wrapText(text, maxWidth, fontSize);
+      lines.forEach((line, i) => ctx.fillText(line, x, y + i * lineHeight));
+      return lines.length * lineHeight;
+    }
+
+    function getMaskDimsMm(mask) {
+      return {
+        widthMm: mask.shape === "Circle"
+          ? parseMeasurementToMm(mask.diameter, mask.sizeUnit || "mm")
+          : parseMeasurementToMm(mask.width, mask.sizeUnit || "mm"),
+        heightMm: mask.shape === "Circle"
+          ? parseMeasurementToMm(mask.diameter, mask.sizeUnit || "mm")
+          : parseMeasurementToMm(mask.height, mask.sizeUnit || "mm"),
+        xMm: parseMeasurementToMm(mask.x, mask.positionUnit || "mm"),
+        yMm: parseMeasurementToMm(mask.y, mask.positionUnit || "mm")
+      };
+    }
+
+    function getAutoMaskFontPt(mask) {
+      const { widthMm, heightMm } = getMaskDimsMm(mask);
+      const shortestMm = Math.max(1, Math.min(widthMm, heightMm));
+      const longestMm = Math.max(1, Math.max(widthMm, heightMm));
+      const nameLength = Math.max(1, String(mask.name || "").length);
+
+      const byHeightPt = shortestMm * PT_PER_MM * 0.22;
+      const byWidthPt = (longestMm * PT_PER_MM * 0.72) / (nameLength * 0.5);
+
+      return clamp(Math.min(byHeightPt, byWidthPt), 6, 240);
+    }
+
+    function getPreviewMaskFontPx(mask, previewScale) {
+      const pt = getAutoMaskFontPt(mask);
+      return Math.max(6, pt * (previewScale / PT_PER_MM));
+    }
+
+    function drawMaskPreview(ctx, mask, s, l) {
+      const { widthMm, heightMm, xMm, yMm } = getMaskDimsMm(mask);
+
+      const pageLeftMm = l.visibleLeftMm + xMm;
+      const pageBottomMm = l.visibleBottomMm + yMm;
+
+      const pxPerMm = l.preview.scale;
+      const w = widthMm * pxPerMm;
+      const h = heightMm * pxPerMm;
+      const x = pageLeftMm * pxPerMm;
+      const yTop = l.preview.height - ((pageBottomMm + heightMm) * pxPerMm);
+
+      ctx.save();
+      ctx.globalAlpha = clamp(Number(mask.fillOpacity || 0) / 100, 0, 1);
+      ctx.fillStyle = hexToRgbaCss(mask.fillColor, 100);
+      ctx.beginPath();
+
+      if (mask.shape === "Rectangle") {
+        ctx.rect(x, yTop, w, h);
+      } else if (mask.shape === "Circle") {
+        ctx.ellipse(x + w/2, yTop + h/2, w/2, h/2, 0, 0, Math.PI * 2);
+      } else {
+        if (mask.flip === "bottom-left") {
+          ctx.moveTo(x, yTop + h);
+          ctx.lineTo(x, yTop);
+          ctx.lineTo(x + w, yTop + h);
+        }
+        if (mask.flip === "bottom-right") {
+          ctx.moveTo(x + w, yTop + h);
+          ctx.lineTo(x + w, yTop);
+          ctx.lineTo(x, yTop + h);
+        }
+        if (mask.flip === "top-left") {
+          ctx.moveTo(x, yTop);
+          ctx.lineTo(x, yTop + h);
+          ctx.lineTo(x + w, yTop);
+        }
+        if (mask.flip === "top-right") {
+          ctx.moveTo(x + w, yTop);
+          ctx.lineTo(x + w, yTop + h);
+          ctx.lineTo(x, yTop);
+        }
+        ctx.closePath();
+      }
+
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = clamp(Number(mask.textOpacity || 0) / 100, 0, 1);
+      ctx.fillStyle = hexToRgbaCss(mask.textColor, 100);
+
+      const fontPx = getPreviewMaskFontPx(mask, l.preview.scale);
+      ctx.font = `700 ${fontPx}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      let textY = yTop + h / 2;
+      if (mask.textAlignY === "top") textY = yTop + fontPx * 0.8;
+      if (mask.textAlignY === "bottom") textY = yTop + h - fontPx * 0.6;
+
+      ctx.fillText(mask.name || "", x + w / 2, textY);
+      ctx.restore();
+    }
+
+    function drawPageToCanvas(canvas, s, widthPx, heightPx) {
+      const ctx = canvas.getContext("2d");
+      canvas.width = Math.max(1, Math.round(widthPx));
+      canvas.height = Math.max(1, Math.round(heightPx));
+
+      const preview = {
+        width: canvas.width,
+        height: canvas.height,
+        scale: canvas.width / Math.max(s.totalWmm, 1)
+      };
+
+      const l = getLayout(s, preview);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = Math.max(1, canvas.width / 1200);
+      ctx.strokeRect(
+        s.cfg.bleedMm * l.preview.scale,
+        s.cfg.bleedMm * l.preview.scale,
+        s.sizeWithWrapWmm * l.preview.scale,
+        s.sizeWithWrapHmm * l.preview.scale
+      );
+
+      if (s.cfg.showWrapLine) {
+        ctx.strokeStyle = "#000";
+        ctx.strokeRect(
+          (s.cfg.bleedMm + s.cfg.wrapMm) * l.preview.scale,
+          (s.cfg.bleedMm + s.cfg.wrapMm) * l.preview.scale,
+          s.visibleWmm * l.preview.scale,
+          s.visibleHmm * l.preview.scale
+        );
+      }
+
+      s.masks.forEach(mask => drawMaskPreview(ctx, mask, s, l));
+
+      ctx.fillStyle = "#0f172a";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.font = `700 ${l.titleFont}px Arial`;
+      ctx.fillText(s.templateName || "Artwork Template", l.preview.width / 2, l.titleBaseY);
+
+      ctx.font = `${l.infoFont}px Arial`;
+      let infoY = l.firstLineY;
+      l.infoWrapped.forEach(lines => {
+        lines.forEach((line, idx) => ctx.fillText(line, l.preview.width / 2, infoY + idx * l.lineGap));
+        infoY += lines.length * l.lineGap;
+      });
+
+      ctx.font = `${l.noteFont}px Arial`;
+      drawWrappedCentered(ctx, s.note, l.preview.width / 2, l.noteY, l.preview.width * 0.7, l.noteFont * 1.2, l.noteFont);
+
+      ctx.fillStyle = "#475569";
+      ctx.font = `${l.guideFont}px Arial`;
+      ctx.fillText("Red line = bleed boundary", l.preview.width / 2, l.guideStartY);
+
+      if (s.cfg.showWrapLine) {
+        ctx.fillText(
+          "Black line = visible area boundary / wrap starts outside it",
+          l.preview.width / 2,
+          l.guideStartY + Math.max(14, l.guideFont * 1.4)
+        );
+      }
+    }
+
+    function drawPreview() {
+      const s = getState();
+
+      el("customBleedWrap").classList.toggle("hidden", s.material !== "Custom Bleed");
+      el("rule").textContent = s.cfg.notes;
+      el("err").classList.add("hidden");
+      el("ok").classList.add("hidden");
+
+      const fit = fitPreview(s.totalWmm, s.totalHmm);
+      drawPageToCanvas(el("previewCanvas"), s, fit.width, fit.height);
+      renderDetails(s);
+      updateMaskLimit();
+    }
+
+    function buildMaskPdfCommands(mask, s, layout, gsFillName, gsTextName) {
+      const { widthMm, heightMm, xMm, yMm } = getMaskDimsMm(mask);
+
+      const x = layout.visibleLeftMm + xMm;
+      const bottom = layout.visibleBottomMm + yMm;
+      const yTop = s.totalHmm - (bottom + heightMm);
+
+      const fill = hexToRgb01(mask.fillColor);
+      const text = hexToRgb01(mask.textColor);
+
+      const wPt = widthMm * PT_PER_MM;
+      const hPt = heightMm * PT_PER_MM;
+      const xPt = x * PT_PER_MM;
+      const yPt = yTop * PT_PER_MM;
+
+      let stream = "";
+      stream += `q\n/${gsFillName} gs\n${fill.r} ${fill.g} ${fill.b} rg\n`;
+
+      if (mask.shape === "Rectangle") {
+        stream += `${xPt} ${layout.heightPt - yPt - hPt} ${wPt} ${hPt} re f\n`;
+      } else if (mask.shape === "Circle") {
+        const k = 0.5522847498;
+        const rx = wPt / 2;
+        const ry = hPt / 2;
+        const cx = xPt + rx;
+        const cy = layout.heightPt - yPt - ry;
+        stream += `${cx + rx} ${cy} m\n`;
+        stream += `${cx + rx} ${cy + ry*k} ${cx + rx*k} ${cy + ry} ${cx} ${cy + ry} c\n`;
+        stream += `${cx - rx*k} ${cy + ry} ${cx - rx} ${cy + ry*k} ${cx - rx} ${cy} c\n`;
+        stream += `${cx - rx} ${cy - ry*k} ${cx - rx*k} ${cy - ry} ${cx} ${cy - ry} c\n`;
+        stream += `${cx + rx*k} ${cy - ry} ${cx + rx} ${cy - ry*k} ${cx + rx} ${cy} c f\n`;
+      } else {
+        const pdfBottom = layout.heightPt - yPt - hPt;
+        const pdfTop = layout.heightPt - yPt;
+
+        if (mask.flip === "bottom-left") {
+          stream += `${xPt} ${pdfBottom} m ${xPt} ${pdfTop} l ${xPt + wPt} ${pdfBottom} l h f\n`;
+        }
+        if (mask.flip === "bottom-right") {
+          stream += `${xPt + wPt} ${pdfBottom} m ${xPt + wPt} ${pdfTop} l ${xPt} ${pdfBottom} l h f\n`;
+        }
+        if (mask.flip === "top-left") {
+          stream += `${xPt} ${pdfTop} m ${xPt} ${pdfBottom} l ${xPt + wPt} ${pdfTop} l h f\n`;
+        }
+        if (mask.flip === "top-right") {
+          stream += `${xPt + wPt} ${pdfTop} m ${xPt + wPt} ${pdfBottom} l ${xPt} ${pdfTop} l h f\n`;
+        }
+      }
+
+      stream += `Q\n`;
+
+      const fontSizePt = getAutoMaskFontPt(mask);
+      const textWidth = textWidthApprox(mask.name || "", fontSizePt);
+      const centerXPt = xPt + wPt / 2;
+
+      let textBaseMm = yTop + (heightMm / 2);
+      const fontMm = fontSizePt / PT_PER_MM;
+      if (mask.textAlignY === "top") textBaseMm = yTop + fontMm * 1.2;
+      if (mask.textAlignY === "bottom") textBaseMm = yTop + heightMm - fontMm * 0.35;
+
+      const textYPt = layout.heightPt - (textBaseMm * PT_PER_MM);
+
+      stream += `BT\n/${gsTextName} gs\n/F1 ${fontSizePt} Tf\n${text.r} ${text.g} ${text.b} rg\n1 0 0 1 ${centerXPt - textWidth/2} ${textYPt} Tm\n(${pdfEscape(mask.name || "")}) Tj\nET\n`;
+
+      return stream;
+    }
+
+    function buildVectorPdfBlob(s) {
+      const widthPt = s.totalWmm * PT_PER_MM;
+      const heightPt = s.totalHmm * PT_PER_MM;
+
+      const l = getLayout(s, { width: s.totalWmm, height: s.totalHmm, scale: 1 });
+      l.heightPt = heightPt;
+
+      let stream = "";
+
+      const topY = (mm) => heightPt - (mm * PT_PER_MM);
+
+      const rectStroke = (x, y, w, h, r, g, b, lineW) => {
+        stream += `${r} ${g} ${b} RG\n${lineW} w\n${x*PT_PER_MM} ${topY(y+h)} ${w*PT_PER_MM} ${h*PT_PER_MM} re S\n`;
+      };
+
+      const textLine = (text, xCenterMm, yMm, fontSizePt, r, g, b) => {
+        const xPt = xCenterMm * PT_PER_MM - textWidthApprox(text, fontSizePt) / 2;
+        const yPt = topY(yMm);
+        stream += `BT\n/F1 ${fontSizePt} Tf\n${r} ${g} ${b} rg\n1 0 0 1 ${xPt} ${yPt} Tm\n(${pdfEscape(text)}) Tj\nET\n`;
+      };
+
+      const wrappedTextCentered = (text, xCenterMm, yMm, maxWidthMm, fontSizePt, lineHeightMm, r, g, b) => {
+        const lines = wrapText(text, maxWidthMm * PT_PER_MM, fontSizePt);
+        lines.forEach((line, i) => textLine(line, xCenterMm, yMm + i * lineHeightMm, fontSizePt, r, g, b));
+      };
+
+      const alphaMap = new Map();
+      const addAlpha = (alpha) => {
+        const key = clamp(alpha, 0, 1).toFixed(3);
+        if (!alphaMap.has(key)) alphaMap.set(key, `GS${alphaMap.size + 1}`);
+        return alphaMap.get(key);
+      };
+
+      s.masks.forEach(mask => {
+        addAlpha(Number(mask.fillOpacity || 0) / 100);
+        addAlpha(Number(mask.textOpacity || 0) / 100);
+      });
+
+      stream += `1 1 1 rg\n0 0 ${widthPt} ${heightPt} re f\n`;
+
+      rectStroke(
+        s.cfg.bleedMm,
+        s.cfg.bleedMm,
+        s.sizeWithWrapWmm,
+        s.sizeWithWrapHmm,
+        0.8627, 0.1490, 0.1490,
+        Math.max(0.4 * PT_PER_MM, 0.8)
+      );
+
+      if (s.cfg.showWrapLine) {
+        rectStroke(
+          s.cfg.bleedMm + s.cfg.wrapMm,
+          s.cfg.bleedMm + s.cfg.wrapMm,
+          s.visibleWmm,
+          s.visibleHmm,
+          0, 0, 0,
+          Math.max(0.5 * PT_PER_MM, 0.9)
+        );
+      }
+
+      s.masks.forEach(mask => {
+        const gsFillName = addAlpha(Number(mask.fillOpacity || 0) / 100);
+        const gsTextName = addAlpha(Number(mask.textOpacity || 0) / 100);
+        stream += buildMaskPdfCommands(mask, s, l, gsFillName, gsTextName);
+      });
+
+      const centerX = s.totalWmm / 2;
+
+      textLine(
+        s.templateName || "Artwork Template",
+        centerX,
+        l.titleBaseY,
+        l.titleFont * PT_PER_MM,
+        0.0588, 0.0902, 0.1647
+      );
+
+      let infoY = l.firstLineY;
+      l.infoWrapped.forEach(lines => {
+        lines.forEach((line, idx) => {
+          textLine(line, centerX, infoY + idx * l.lineGap, l.infoFont * PT_PER_MM, 0.0588, 0.0902, 0.1647);
+        });
+        infoY += lines.length * l.lineGap;
+      });
+
+      wrappedTextCentered(
+        s.note,
+        centerX,
+        l.noteY,
+        s.totalWmm * 0.7,
+        l.noteFont * PT_PER_MM,
+        l.noteFont * 1.2,
+        0.0588, 0.0902, 0.1647
+      );
+
+      textLine("Red line = bleed boundary", centerX, l.guideStartY, l.guideFont * PT_PER_MM, 0.2784, 0.3333, 0.4118);
+
+      if (s.cfg.showWrapLine) {
+        textLine(
+          "Black line = visible area boundary / wrap starts outside it",
+          centerX,
+          l.guideStartY + Math.max(14, l.guideFont * 1.4),
+          l.guideFont * PT_PER_MM,
+          0.2784, 0.3333, 0.4118
+        );
+      }
+
+      const objects = [];
+      const add = (value) => {
+        objects.push(value);
+        return objects.length;
+      };
+
+      const fontId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+
+      const gsIds = {};
+      alphaMap.forEach((name, alpha) => {
+        gsIds[name] = add(`<< /Type /ExtGState /ca ${alpha} /CA ${alpha} >>`);
+      });
+
+      const contentId = add(`<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`);
+      const extGs = Object.entries(gsIds).map(([name, id]) => `/${name} ${id} 0 R`).join(" ");
+      const resources = `<< /Font << /F1 ${fontId} 0 R >>${extGs ? ` /ExtGState << ${extGs} >>` : ""} >>`;
+
+      const pageId = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ${widthPt} ${heightPt}] /Resources ${resources} /Contents ${contentId} 0 R >>`);
+      const pagesId = add(`<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`);
+      objects[pageId - 1] = objects[pageId - 1].replace("/Parent 0 0 R", `/Parent ${pagesId} 0 R`);
+      const catalogId = add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+
+      let pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+      const offsets = [0];
+
+      for (let i = 0; i < objects.length; i++) {
+        offsets.push(new TextEncoder().encode(pdf).length);
+        pdf += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
+      }
+
+      const xrefOffset = new TextEncoder().encode(pdf).length;
+      pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+
+      for (let i = 1; i < offsets.length; i++) {
+        pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+      }
+
+      pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+      return new Blob([pdf], { type: "application/pdf" });
+    }
+
+    function downloadBlob(blob, name) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function renderDetails(s) {
+      const lines = buildArtworkInfoLines(s);
+      el("details").innerHTML = lines
+        .map((line, index) => {
+          const parts = line.split(": ");
+          if (parts.length > 1) {
+            return `<div class="detail-row"><div class="label">${parts[0]}</div><div>${parts.slice(1).join(": ")}</div></div>`;
+          }
+          return `<div class="detail-row"><div class="label">Line ${index + 1}</div><div>${line}</div></div>`;
+        })
+        .join("");
+    }
+
+    function renderMasksPane() {
+      const list = el("masksList");
+      list.innerHTML = "";
+
+      masks.forEach((mask, index) => {
+        const sizeUnitLabel = mask.sizeUnit === "ftin" ? "feet/inches" : mask.sizeUnit;
+        const positionUnitLabel = mask.positionUnit === "ftin" ? "feet/inches" : mask.positionUnit;
+
+        const shapeFields = mask.shape === "Circle"
+          ? `<div><label>Diameter (${sizeUnitLabel})</label><input type="text" data-mask-index="${index}" data-field="diameter" value="${mask.diameter}"></div>`
+          : `<div><label>Width (${sizeUnitLabel})</label><input type="text" data-mask-index="${index}" data-field="width" value="${mask.width}"></div>
+             <div><label>Height (${sizeUnitLabel})</label><input type="text" data-mask-index="${index}" data-field="height" value="${mask.height}"></div>`;
+
+        const triangleFlip = mask.shape === "Triangle"
+          ? `<div><label>Flip</label><select data-mask-index="${index}" data-field="flip">
+              <option value="bottom-left" ${mask.flip === "bottom-left" ? "selected" : ""}>Bottom Left</option>
+              <option value="bottom-right" ${mask.flip === "bottom-right" ? "selected" : ""}>Bottom Right</option>
+              <option value="top-left" ${mask.flip === "top-left" ? "selected" : ""}>Top Left</option>
+              <option value="top-right" ${mask.flip === "top-right" ? "selected" : ""}>Top Right</option>
+            </select></div>`
+          : "";
+
+        const fillOpacityOptions = OPACITY_OPTIONS
+          .map(v => `<option value="${v}" ${Number(mask.fillOpacity) === v ? "selected" : ""}>${v}%</option>`)
+          .join("");
+
+        const textOpacityOptions = OPACITY_OPTIONS
+          .map(v => `<option value="${v}" ${Number(mask.textOpacity) === v ? "selected" : ""}>${v}%</option>`)
+          .join("");
+
+        const card = document.createElement("div");
+        card.className = "mask-card";
+        card.innerHTML = `
+          <div class="mask-header">
+            <div class="mask-title">Mask ${index + 1}</div>
+            <div class="mask-actions">
+              <button class="button ghost" style="width:auto;" type="button" data-duplicate-mask="${index}">Duplicate</button>
+              <button class="button ghost" style="width:auto;" type="button" data-remove-mask="${index}">Remove</button>
+            </div>
+          </div>
+
+          <div class="section-space">
+            <div><label>Mask Name</label><input type="text" data-mask-index="${index}" data-field="name" value="${mask.name}"></div>
+
+            <div class="grid-2">
+              <div>
+                <label>Shape</label>
+                <select data-mask-index="${index}" data-field="shape">
+                  <option value="Rectangle" ${mask.shape === "Rectangle" ? "selected" : ""}>Rectangle</option>
+                  <option value="Circle" ${mask.shape === "Circle" ? "selected" : ""}>Circle</option>
+                  <option value="Triangle" ${mask.shape === "Triangle" ? "selected" : ""}>Triangle</option>
+                </select>
+              </div>
+              <div>
+                <label>Text Align</label>
+                <select data-mask-index="${index}" data-field="textAlignY">
+                  <option value="top" ${mask.textAlignY === "top" ? "selected" : ""}>Top</option>
+                  <option value="middle" ${mask.textAlignY === "middle" ? "selected" : ""}>Middle</option>
+                  <option value="bottom" ${mask.textAlignY === "bottom" ? "selected" : ""}>Bottom</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-3">
+              <div>
+                <label>Size Unit</label>
+                <select data-mask-index="${index}" data-field="sizeUnit">
+                  <option value="mm" ${mask.sizeUnit === "mm" ? "selected" : ""}>mm</option>
+                  <option value="cm" ${mask.sizeUnit === "cm" ? "selected" : ""}>cm</option>
+                  <option value="m" ${mask.sizeUnit === "m" ? "selected" : ""}>m</option>
+                  <option value="ftin" ${mask.sizeUnit === "ftin" ? "selected" : ""}>feet/inches</option>
+                </select>
+              </div>
+              <div>
+                <label>Position Unit</label>
+                <select data-mask-index="${index}" data-field="positionUnit">
+                  <option value="mm" ${mask.positionUnit === "mm" ? "selected" : ""}>mm</option>
+                  <option value="cm" ${mask.positionUnit === "cm" ? "selected" : ""}>cm</option>
+                  <option value="m" ${mask.positionUnit === "m" ? "selected" : ""}>m</option>
+                  <option value="ftin" ${mask.positionUnit === "ftin" ? "selected" : ""}>feet/inches</option>
+                </select>
+              </div>
+              <div></div>
+            </div>
+
+            <div class="grid-2">
+              ${shapeFields}
+            </div>
+
+            ${triangleFlip ? `<div class="grid-2">${triangleFlip}<div></div></div>` : ""}
+
+            <div class="grid-2">
+              <div>
+                <label>X (${positionUnitLabel})</label>
+                <input type="text" data-mask-index="${index}" data-field="x" value="${mask.x}">
+              </div>
+              <div>
+                <label>Y (${positionUnitLabel})</label>
+                <input type="text" data-mask-index="${index}" data-field="y" value="${mask.y}">
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label>Mask Colour</label>
+                <input type="color" data-mask-index="${index}" data-field="fillColor" value="${mask.fillColor}">
+              </div>
+              <div>
+                <label>Mask Opacity</label>
+                <select data-mask-index="${index}" data-field="fillOpacity">
+                  ${fillOpacityOptions}
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label>Mask Text Colour</label>
+                <input type="color" data-mask-index="${index}" data-field="textColor" value="${mask.textColor}">
+              </div>
+              <div>
+                <label>Text Opacity</label>
+                <select data-mask-index="${index}" data-field="textOpacity">
+                  ${textOpacityOptions}
+                </select>
+              </div>
+            </div>
+
+            <div class="inline-note">Mask name text size is automatically scaled to suit the mask size.</div>
+          </div>
+        `;
+
+        list.appendChild(card);
+      });
+
+      list.querySelectorAll("[data-remove-mask]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          masks.splice(Number(btn.getAttribute("data-remove-mask")), 1);
+          renderMasksPane();
+          drawPreview();
+        });
+      });
+
+      list.querySelectorAll("[data-duplicate-mask]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (masks.length >= MAX_MASKS) return;
+          const index = Number(btn.getAttribute("data-duplicate-mask"));
+          const copy = cloneMask(masks[index], masks.length);
+          copy.name = `${copy.name} Copy`;
+          masks.splice(index + 1, 0, copy);
+          if (masks.length > MAX_MASKS) masks = masks.slice(0, MAX_MASKS);
+          renderMasksPane();
+          drawPreview();
+        });
+      });
+
+      list.querySelectorAll("[data-mask-index]").forEach(input => {
+        const index = Number(input.getAttribute("data-mask-index"));
+        const field = input.getAttribute("data-field");
+
+        const handler = () => {
+          let value = input.value;
+
+          if (["fillOpacity","textOpacity"].includes(field)) {
+            value = Number(value || 0);
+          }
+
+          if (field === "sizeUnit") {
+            const oldUnit = masks[index].sizeUnit || "mm";
+            const newUnit = value;
+            if (masks[index].shape === "Circle") {
+              masks[index].diameter = convertFieldValueBetweenUnits(masks[index].diameter, oldUnit, newUnit);
+            } else {
+              masks[index].width = convertFieldValueBetweenUnits(masks[index].width, oldUnit, newUnit);
+              masks[index].height = convertFieldValueBetweenUnits(masks[index].height, oldUnit, newUnit);
+            }
+            masks[index].sizeUnit = newUnit;
+            renderMasksPane();
+            drawPreview();
+            return;
+          }
+
+          if (field === "positionUnit") {
+            const oldUnit = masks[index].positionUnit || "mm";
+            const newUnit = value;
+            masks[index].x = convertFieldValueBetweenUnits(masks[index].x, oldUnit, newUnit);
+            masks[index].y = convertFieldValueBetweenUnits(masks[index].y, oldUnit, newUnit);
+            masks[index].positionUnit = newUnit;
+            renderMasksPane();
+            drawPreview();
+            return;
+          }
+
+          masks[index][field] = value;
+
+          if (["shape","fillOpacity","textOpacity"].includes(field)) {
+            renderMasksPane();
+          }
+
+          drawPreview();
+        };
+
+        input.addEventListener("input", handler);
+        input.addEventListener("change", handler);
+      });
+
+      updateMaskLimit();
+    }
+
+    function updateMaskLimit() {
+      el("addMaskBtn").disabled = masks.length >= MAX_MASKS;
+      el("maskLimitNote").textContent = `${masks.length} of ${MAX_MASKS} masks used.`;
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      el("canvasPane").classList.toggle("hidden", tab !== "canvas");
+      el("masksPane").classList.toggle("hidden", tab !== "masks");
+      el("tabCanvas").classList.toggle("active", tab === "canvas");
+      el("tabMasks").classList.toggle("active", tab === "masks");
+    }
+
+    function convertCanvasUnit(oldUnit, newUnit) {
+      const wMm = toMm(el("w").value, oldUnit);
+      const hMm = toMm(el("h").value, oldUnit);
+      el("w").value = String(Math.round(fromMm(wMm, newUnit) * 1000000) / 1000000);
+      el("h").value = String(Math.round(fromMm(hMm, newUnit) * 1000000) / 1000000);
+    }
+
+    function resetForm() {
+      el("w").value = "1000";
+      el("h").value = "2000";
+      el("unit").value = "mm";
+      el("material").value = "Foamex / Hard Materials";
+      el("customBleed").value = "10";
+      el("ppi").value = "90";
+      el("templateName").value = "Artwork Template";
+      el("job").value = "";
+      el("art").value = "";
+      el("date").value = "";
+      el("matinfo").value = "";
+      el("note").value = "All artwork should be submitted as high resolution PDFs.";
+      masks = [];
+      renderMasksPane();
+      drawPreview();
+      switchTab("canvas");
+    }
+
+    async function exportPDF() {
+      const s = getState();
+
+      if (!(s.visibleWmm > 0 && s.visibleHmm > 0 && s.ppi > 0)) return;
+
+      if (s.totalWmm > MAX_PDF_MM || s.totalHmm > MAX_PDF_MM) {
+        el("err").textContent = `PDF size exceeds browser-safe limits. Maximum supported side is ${MAX_PDF_MM}mm.`;
+        el("err").classList.remove("hidden");
+        return;
+      }
+
+      const btn = el("exportPdfBtn");
+      btn.disabled = true;
+      btn.textContent = "Exporting...";
+
+      try {
+        const blob = buildVectorPdfBlob(s);
+        downloadBlob(blob, `${filenameBase(s)}.pdf`);
+        el("ok").textContent = "PDF export started.";
+        el("ok").classList.remove("hidden");
+      } catch (err) {
+        el("err").textContent = err && err.message ? err.message : "PDF export failed.";
+        el("err").classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Export PDF";
+      }
+    }
+
+    canvasInputs.forEach(id => {
+      el(id).addEventListener("input", () => {
+        renderMasksPane();
+        drawPreview();
+      });
+      el(id).addEventListener("change", () => {
+        renderMasksPane();
+        drawPreview();
+      });
+    });
+
+    el("unit").addEventListener("focus", (e) => {
+      e.target.dataset.prevValue = e.target.value;
+    });
+
+    el("unit").addEventListener("change", (e) => {
+      const oldUnit = e.target.dataset.prevValue || "mm";
+      const newUnit = e.target.value;
+      if (oldUnit !== newUnit) {
+        convertCanvasUnit(oldUnit, newUnit);
+      }
+      e.target.dataset.prevValue = newUnit;
+      renderMasksPane();
+      drawPreview();
+    });
+
+    el("tabCanvas").addEventListener("click", () => switchTab("canvas"));
+    el("tabMasks").addEventListener("click", () => switchTab("masks"));
+    el("resetBtn").addEventListener("click", resetForm);
+
+    el("addMaskBtn").addEventListener("click", () => {
+      if (masks.length >= MAX_MASKS) return;
+      masks.push(defaultMask(masks.length));
+      renderMasksPane();
+      drawPreview();
+    });
+
+    el("exportPdfBtn").addEventListener("click", exportPDF);
+
+    renderMasksPane();
+    drawPreview();
+  </script>
+</body>
+</html>
