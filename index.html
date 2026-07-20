@@ -337,7 +337,10 @@
             <div id="rule"></div>
           </div>
 
-          <button id="exportPdfBtn" class="button" type="button">Export PDF</button>
+          <div class="grid-2">
+            <button id="exportPdfBtn" class="button" type="button">Export PDF</button>
+            <button id="exportPdf50Btn" class="button secondary" type="button">Export PDF @ 50% Size</button>
+          </div>
 
           <div id="ok" class="ok hidden">Export started.</div>
           <div id="err" class="error hidden"></div>
@@ -375,6 +378,7 @@
     const MM_PER_INCH = 25.4;
     const PREVIEW_MAX = 780;
     const MAX_PDF_MM = 20000;
+    const MAX_PDF_BASE_UNITS = 14000;
     const PT_PER_MM = 72 / 25.4;
     const MAX_MASKS = 5;
     const OPACITY_OPTIONS = [10,20,30,40,50,60,70,80,90,100];
@@ -1001,16 +1005,31 @@
       return stream;
     }
 
-    function buildVectorPdfBlob(s) {
-      const widthPt = s.totalWmm * PT_PER_MM;
-      const heightPt = s.totalHmm * PT_PER_MM;
+    function buildVectorPdfBlob(s, exportScale = 1) {
+      const safeExportScale = clamp(Number(exportScale) || 1, 0.01, 1);
+      const sourceWidthPt = s.totalWmm * PT_PER_MM;
+      const sourceHeightPt = s.totalHmm * PT_PER_MM;
+      const widthPt = sourceWidthPt * safeExportScale;
+      const heightPt = sourceHeightPt * safeExportScale;
+
+      // PDF page boxes are widely limited to 14,400 default user-space units
+      // (about 5.08m at the normal 72 units per inch). For larger artwork,
+      // use PDF 1.6 /UserUnit and proportionally reduce the MediaBox and
+      // content coordinates. The resulting PDF retains its true physical size.
+      const userUnit = Math.max(1, Math.max(widthPt, heightPt) / MAX_PDF_BASE_UNITS);
+      const mediaWidth = widthPt / userUnit;
+      const mediaHeight = heightPt / userUnit;
 
       const l = getLayout(s, { width: s.totalWmm, height: s.totalHmm, scale: 1 });
-      l.heightPt = heightPt;
+      l.heightPt = sourceHeightPt;
 
-      let stream = "";
+      const contentScale = safeExportScale / userUnit;
+      const useContentTransform = Math.abs(contentScale - 1) > 0.0000001;
+      let stream = useContentTransform
+        ? `q\n${contentScale} 0 0 ${contentScale} 0 0 cm\n`
+        : "";
 
-      const topY = (mm) => heightPt - (mm * PT_PER_MM);
+      const topY = (mm) => sourceHeightPt - (mm * PT_PER_MM);
 
       const rectStroke = (x, y, w, h, r, g, b, lineW) => {
         stream += `${r} ${g} ${b} RG\n${lineW} w\n${x*PT_PER_MM} ${topY(y+h)} ${w*PT_PER_MM} ${h*PT_PER_MM} re S\n`;
@@ -1039,7 +1058,7 @@
         addAlpha(Number(mask.textOpacity || 0) / 100);
       });
 
-      stream += `1 1 1 rg\n0 0 ${widthPt} ${heightPt} re f\n`;
+      stream += `1 1 1 rg\n0 0 ${sourceWidthPt} ${sourceHeightPt} re f\n`;
 
       rectStroke(
         s.cfg.bleedMm,
@@ -1120,16 +1139,18 @@
         gsIds[name] = add(`<< /Type /ExtGState /ca ${alpha} /CA ${alpha} >>`);
       });
 
+      if (useContentTransform) stream += "Q\n";
+
       const contentId = add(`<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`);
       const extGs = Object.entries(gsIds).map(([name, id]) => `/${name} ${id} 0 R`).join(" ");
       const resources = `<< /Font << /F1 ${fontId} 0 R >>${extGs ? ` /ExtGState << ${extGs} >>` : ""} >>`;
 
-      const pageId = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ${widthPt} ${heightPt}] /Resources ${resources} /Contents ${contentId} 0 R >>`);
+      const pageId = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ${mediaWidth} ${mediaHeight}]${userUnit > 1 ? ` /UserUnit ${userUnit}` : ""} /Resources ${resources} /Contents ${contentId} 0 R >>`);
       const pagesId = add(`<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`);
       objects[pageId - 1] = objects[pageId - 1].replace("/Parent 0 0 R", `/Parent ${pagesId} 0 R`);
       const catalogId = add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
 
-      let pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+      let pdf = "%PDF-1.6\n%\xE2\xE3\xCF\xD3\n";
       const offsets = [0];
 
       for (let i = 0; i < objects.length; i++) {
@@ -1421,32 +1442,41 @@
       switchTab("canvas");
     }
 
-    async function exportPDF() {
+    async function exportPDF(exportScale = 1) {
       const s = getState();
+      const safeExportScale = clamp(Number(exportScale) || 1, 0.01, 1);
 
       if (!(s.visibleWmm > 0 && s.visibleHmm > 0 && s.ppi > 0)) return;
 
-      if (s.totalWmm > MAX_PDF_MM || s.totalHmm > MAX_PDF_MM) {
-        el("err").textContent = `PDF size exceeds browser-safe limits. Maximum supported side is ${MAX_PDF_MM}mm.`;
+      const exportedWmm = s.totalWmm * safeExportScale;
+      const exportedHmm = s.totalHmm * safeExportScale;
+
+      if (exportedWmm > MAX_PDF_MM || exportedHmm > MAX_PDF_MM) {
+        el("err").textContent = `Exported PDF size exceeds browser-safe limits. Maximum supported side is ${MAX_PDF_MM}mm.`;
         el("err").classList.remove("hidden");
         return;
       }
 
-      const btn = el("exportPdfBtn");
+      const isHalfSize = safeExportScale === 0.5;
+      const btn = el(isHalfSize ? "exportPdf50Btn" : "exportPdfBtn");
+      const defaultLabel = isHalfSize ? "Export PDF @ 50% Size" : "Export PDF";
       btn.disabled = true;
       btn.textContent = "Exporting...";
 
       try {
-        const blob = buildVectorPdfBlob(s);
-        downloadBlob(blob, `${filenameBase(s)}.pdf`);
-        el("ok").textContent = "PDF export started.";
+        const blob = buildVectorPdfBlob(s, safeExportScale);
+        const scaleSuffix = isHalfSize ? " - 50 Percent Scale" : "";
+        downloadBlob(blob, `${filenameBase(s)}${scaleSuffix}.pdf`);
+        el("ok").textContent = isHalfSize
+          ? "50% size PDF export started."
+          : "PDF export started.";
         el("ok").classList.remove("hidden");
       } catch (err) {
         el("err").textContent = err && err.message ? err.message : "PDF export failed.";
         el("err").classList.remove("hidden");
       } finally {
         btn.disabled = false;
-        btn.textContent = "Export PDF";
+        btn.textContent = defaultLabel;
       }
     }
 
@@ -1487,7 +1517,8 @@
       drawPreview();
     });
 
-    el("exportPdfBtn").addEventListener("click", exportPDF);
+    el("exportPdfBtn").addEventListener("click", () => exportPDF(1));
+    el("exportPdf50Btn").addEventListener("click", () => exportPDF(0.5));
 
     renderMasksPane();
     drawPreview();
